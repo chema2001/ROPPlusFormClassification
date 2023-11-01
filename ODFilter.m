@@ -73,10 +73,6 @@ for i=1:length(image_files)
     filtImg = conv2(redChannel, dog, 'same');
     filtImg(~mask) = mean(mean(filtImg(mask)));
     filtImg = imadjust(filtImg);
-%     th = multithresh(filtImg, 3);
-%     filtImg1 = imbinarize(filtImg, th(1));
-%     filtImg2 = imbinarize(filtImg, th(end));
-%     filtImg = filtImg1 & filtImg2;
     
     [c,r,metric] = imfindcircles(filtImg,[10 40], 'EdgeThreshold',0.25);
     
@@ -112,7 +108,6 @@ for i=1:length(image_files)
             minorAxis = cat(1, stats.MinorAxisLength);
             areaStat = cat(1, stats.Area);
             
-            filtered_mask = false(size(segImg));
             for j=1:size(centroids,1)
                 distx = centroids(j,1) - c(1);
                 disty = centroids(j,2) - c(2);
@@ -135,13 +130,13 @@ for i=1:length(image_files)
     end
 
     maskRGB = cat(3, 255 * segImg, 255*(segImg & ODMask), 255*(segImg & ODMask));
-    ODMaskName = "Retinal_Images\ODMasks\Visual\OD_" + image_files(i).name;
+    ODMaskName = "Retinal_Images\ODMasks_new\Visual\OD_" + image_files(i).name;
     imwrite(maskRGB, ODMaskName);
 
-    ODFilteredImageName = "Retinal_Images\ODMasks\JPG\OD_" + image_files(i).name; 
+    ODFilteredImageName = "Retinal_Images\ODMasks_new\Visual\OD_" + image_files(i).name; 
     imwrite(ODMask, ODFilteredImageName);
 
     image_id = split(image_files(i).name, '.');
-    matOD_name = "Retinal_Images\ODMasks\MAT\OD_" + image_id(1) + ".mat";
+    matOD_name = "Retinal_Images\ODMasks_new\MAT\OD_" + image_id(1) + ".mat";
     save(matOD_name, "ODMask");
 end

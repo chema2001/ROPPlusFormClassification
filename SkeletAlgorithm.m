@@ -1,13 +1,13 @@
 clc; clear all; close all;
 
 % Folder Selection
-seg_folder = "Retinal_Images\Segmentation_Results\MAT\";
+seg_folder = "Retinal_Images\ODMasks\MAT\";
 files = dir(seg_folder);
 seg_files = files(contains({files.name}, {'.mat'}));
 
 for i=1:length(seg_files)
     segResult = load(seg_folder + seg_files(i).name);
-    segResult = segResult.segImg;
+    segResult = segResult.ODMask; %Change accordingly
     skel = bwskel(segResult);
     
     % Save the result of the Segmentation

@@ -1,4 +1,4 @@
-% *RetCam3 Retinal Blood Vessel Segmentation Algorithm*
+% *Retinal Blood Vessel Segmentation Algorithm*
 %
 %     Developers: José Almeida
 %     VSB - Technical University of Ostrava, 2023
@@ -13,10 +13,11 @@ addpath('frangi_filter_version2a\');
 addpath('jerman_filter\')
 
 % Image Selection
-img_folder = "Retinal_Images\Images\";
-img_name = "ROP043_Serie8_1.jpg";
+img_folder = "ICON_Phoenix\P2\";
+img_name = "210410_L_04-12-2021_06-23-31_11.jpg";
 img_path = img_folder + img_name;
 image = im2double(imread(img_path));
+image = imresize(image,[680 680]); % ONLY for Icon Images
 
 % FOV Mask Generation based on the Green Channel
 greenImg = image(:,:,2);
@@ -33,7 +34,9 @@ LAB(:,:,1) = L*100;
 adaptImgRGB = lab2rgb(LAB);
 
 % Red Channel Extraction from the Enhanced Image
-adaptImg = adaptImgRGB(:,:,1);
+%adaptImg = adaptImgRGB(:,:,2); % For RetCam Images
+adaptImg = rgb2gray(adaptImgRGB);
+% adaptImg = image(:,:,2); % For Icon Images
 
 % Background Normalization
 kernel_size = 30;
@@ -91,7 +94,7 @@ title('TopHat Image')
 
 % Apply Frangi and Jerman Filters
 frangiImg = FrangiFilter2D(imcomplement(fusedImg));
-jermanImg = vesselness2D(imcomplement(fusedImg), 1:2:7, [10;10], 0.90);
+jermanImg = vesselness2D(imcomplement(fusedImg), 1:2:7, [10;10] , 0.90);
 
 % Frangi Result Segmentation using Adapted Otsu Method
 tfrangi = adaptthresh(frangiImg, 0.08);
@@ -100,9 +103,9 @@ binnaryImg1 = bwareaopen(binnaryImg1, 250) & mask;
 
 % Jerman Result Segmentation using Triangle Threshold
 imageArray = reshape(jermanImg, 1, []);
-tjerman = triangleThreshold(imageArray,4);
+tjerman = triangleThreshold(imageArray,8);
 binnaryImg2 = imbinarize(jermanImg,tjerman);
-binnaryImg2 = bwareaopen(binnaryImg2, 100);
+binnaryImg2 = bwareaopen(binnaryImg2, 250);
 
 % Combination of the Frangi and Jerman - For Test porpuses only, not used
 jermanImgC = imadjust(jermanImg, [0 1]);
@@ -118,10 +121,10 @@ subplot(2,3,1)
 imshow(frangiImg,[])
 title('Frangi Filter')
 subplot(2,3,2)
-imshow(jermanImg)
+imshow(jermanImg, [])
 title('Jerman Filter')
 subplot(2,3,3)
-imshow(combinedImg)
+imshow(combinedImg, [])
 title('Combined Img')
 subplot(2,3,4)
 imshow(binnaryImg1)
@@ -142,3 +145,6 @@ title('Original Image')
 subplot(1,2,2)
 imshow(seg_img)
 title('Segmentation Result')
+
+% segImg = imresize(segImg, [1240 1240]);
+% figure; imshow(segImg)

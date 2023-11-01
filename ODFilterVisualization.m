@@ -1,15 +1,14 @@
 clc; clear all; close all;
 
 % Image Selection
-img_name = "ROP045_Serie1_8.jpg";
-img_path = "Retinal_Images\Images\" + img_name;
+img_name = "2154050052_L_04-12-2021_07-10-16_14.jpg";
+img_path = "ICON_Phoenix\P1\" + img_name;
 image = im2double(imread(img_path));
 
-segImg = imread("Retinal_Images\Segmentation_Results\JPG\Seg_" + img_name);
+segImg = imread("ICON_Phoenix\P1\Segmentation_Results\JPG\Seg_" + img_name);
 segImg = imbinarize(segImg);
 [BW,~] = createYellowMask(image);
 
- 
 % [odMask, cx, rx] = OpticalDiskMask(image, BW, 0.3);
 % repRGB = cat(3, 255*(segImg | odMask), 255*segImg, 255*segImg);
 % figure; imshow(repRGB);
@@ -49,11 +48,11 @@ mask = imbinarize(greenImg,0.01);
 mask = imfill(mask, [100,100]);
 mask(1:10, :) = 0;
 mask(end-10:end, :) = 0;
-scrtele = strel('disk', 100);
+scrtele = strel('disk', 50);
 mask = imerode(mask, scrtele) & BW;
 
 redChannel = im2double(image(:,:,1));
-kernel_size = 15;
+kernel_size = 30;
 mean_kernel = ones(kernel_size) / (kernel_size^2);
 background_estimate = conv2(redChannel, mean_kernel, 'same');
 normalized_image = redChannel - background_estimate;
@@ -71,6 +70,8 @@ filtImg = imadjust(filtImg);
 % filtImg1 = imbinarize(filtImg, th(1));
 % filtImg2 = imbinarize(filtImg, th(end));
 % filtImg = filtImg1 & filtImg2;
+
+figure; imshow(filtImg);
 
 [c,r,metric] = imfindcircles(filtImg,[10 40], 'EdgeThreshold',0.25);
 
@@ -109,7 +110,6 @@ if ~isempty(c)
         minorAxis = cat(1, stats.MinorAxisLength);
         areaStat = cat(1, stats.Area);
         
-        filtered_mask = false(size(segImg));
         for i=1:size(centroids,1)
             distx = centroids(i,1) - c(1);
             disty = centroids(i,2) - c(2);
@@ -126,7 +126,7 @@ if ~isempty(c)
     end
 end
 
-figure; imshow(windowMask);
+figure; imshow(segImg);
 hold on
 plot(target(1), target(2), 'r*')
 

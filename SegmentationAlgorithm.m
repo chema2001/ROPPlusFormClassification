@@ -13,13 +13,14 @@ addpath('frangi_filter_version2a\');
 addpath('jerman_filter\')
 
 % Folder Selection
-img_folder = "Retinal_Images\Images\";
+img_folder = "ICON_Phoenix\P2\";
 files = dir(img_folder);
 image_files = files(contains({files.name}, {'.jpg', '.png', '.bmp', '.tif'}));
 
 for i=1:length(image_files)
     image = im2double(imread(img_folder + image_files(i).name));
-    
+    image = imresize(image,[680 680]); % ONLY for Icon Images
+
     % FOV Mask Generation based on the Green Channel
     greenImg = image(:,:,2);
     mask = imbinarize(greenImg,0.01);
@@ -35,7 +36,8 @@ for i=1:length(image_files)
     adaptImgRGB = lab2rgb(LAB);
 
     % Red Channel Extraction from the Enhanced Image
-    adaptImg = adaptImgRGB(:,:,1);
+    %adaptImg = adaptImgRGB(:,:,1); % For RetCam Images
+    adaptImg = image(:,:,2);
 
     % Background Normalization
     kernel_size = 30;
@@ -83,22 +85,23 @@ for i=1:length(image_files)
     % Frangi Result Segmentation using Adapted Otsu Method
     tfrangi = adaptthresh(frangiImg, 0.08);
     binnaryImg1 = imbinarize(frangiImg, tfrangi);
-    binnaryImg1 = bwareaopen(binnaryImg1, 250) & mask;
+    binnaryImg1 = bwareaopen(binnaryImg1, 350) & mask;
    
     % Jerman Result Segmentation using Triangle Threshold
     imageArray = reshape(jermanImg, 1, []);
-    tjerman = triangleThreshold(imageArray,4);
+    tjerman = triangleThreshold(imageArray,10);
     binnaryImg2 = imbinarize(jermanImg,tjerman);
-    binnaryImg2 = bwareaopen(binnaryImg2, 100);
+    binnaryImg2 = bwareaopen(binnaryImg2, 350);
 
     % Final segmentation by combining the two above segmentations
-    segImg = binnaryImg1;
-  
+    segImg = binnaryImg1 & binnaryImg2;
+    segImg = imresize(segImg, [1240 1240]); % ONLY for Icon Images
+
     % Save the result of the Segmentation
-    seg_name =  "Retinal_Images\Segmentation_Results\JPG\Seg_" + image_files(i).name;
+    seg_name =  "ICON_Phoenix\P2\Segmentation_Results\JPG\Seg_" + image_files(i).name;
     imwrite(segImg, seg_name);
 
     image_name = split(image_files(i).name, '.');
-    matSeg_name = "Retinal_Images\Segmentation_Results\MAT\Seg_" + image_name(1) + ".mat";
+    matSeg_name = "ICON_Phoenix\P2\Segmentation_Results\MAT\Seg_" + image_name(1) + ".mat";
     save(matSeg_name, "segImg");
 end

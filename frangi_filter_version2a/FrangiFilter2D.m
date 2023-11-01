@@ -32,10 +32,12 @@ function [outIm,whatScale,Direction] = FrangiFilter2D(I, options)
 % Written by Marc Schrijver, 2/11/2001
 % Re-Written by D.Kroon University of Twente (May 2009)
 
+
 defaultoptions = struct('FrangiScaleRange', [1 8], 'FrangiScaleRatio', 2, 'FrangiBetaOne', 0.5, 'FrangiBetaTwo', 13, 'verbose',true,'BlackWhite',true);
 
+
 % Process inputs
-if(~exist('options','var')), 
+if(~exist('options','var'))
     options=defaultoptions; 
 else
     tags = fieldnames(defaultoptions);
