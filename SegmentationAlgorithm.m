@@ -1,4 +1,4 @@
-% *RetCam3 Retinal Blood Vessel Segmentation Algorithm* 
+% *Retinal Blood Vessel Segmentation Algorithm* 
 %
 %     Developers: José Almeida
 %     VSB - Technical University of Ostrava, 2023
@@ -13,7 +13,7 @@ addpath('frangi_filter_version2a\');
 addpath('jerman_filter\')
 
 % Folder Selection
-img_folder = "ICON_Phoenix\P2\";
+img_folder = "ICON_Phoenix\P4\";
 files = dir(img_folder);
 image_files = files(contains({files.name}, {'.jpg', '.png', '.bmp', '.tif'}));
 
@@ -36,8 +36,8 @@ for i=1:length(image_files)
     adaptImgRGB = lab2rgb(LAB);
 
     % Red Channel Extraction from the Enhanced Image
-    %adaptImg = adaptImgRGB(:,:,1); % For RetCam Images
-    adaptImg = image(:,:,2);
+    adaptImg = adaptImgRGB(:,:,1);
+    %adaptImg = image(:,:,2);
 
     % Background Normalization
     kernel_size = 30;
@@ -98,10 +98,10 @@ for i=1:length(image_files)
     segImg = imresize(segImg, [1240 1240]); % ONLY for Icon Images
 
     % Save the result of the Segmentation
-    seg_name =  "ICON_Phoenix\P2\Segmentation_Results\JPG\Seg_" + image_files(i).name;
+    seg_name =  "ICON_Phoenix\P4\Segmentation_Results\JPG\Seg_" + image_files(i).name;
     imwrite(segImg, seg_name);
 
     image_name = split(image_files(i).name, '.');
-    matSeg_name = "ICON_Phoenix\P2\Segmentation_Results\MAT\Seg_" + image_name(1) + ".mat";
+    matSeg_name = "ICON_Phoenix\P4\Segmentation_Results\MAT\Seg_" + image_name(1) + ".mat";
     save(matSeg_name, "segImg");
 end

@@ -1,4 +1,4 @@
-function newMask = FilterOpticalDisk(image, segImg, RetCam)
+function newMask = FilterOpticalDisk(image, segImg, RetCam, dist_th, axisRatio_th, area_th)
 
     if ~RetCam
         image = imresize(image, [640 640]);
@@ -12,7 +12,7 @@ function newMask = FilterOpticalDisk(image, segImg, RetCam)
     mask = imfill(mask, [100,100]);
     mask(1:10, :) = 0;
     mask(end-10:end, :) = 0;
-    scrtele = strel('disk', 50);
+    scrtele = strel('disk', 100);
     mask = imerode(mask, scrtele);
 
     if ~RetCam
@@ -26,9 +26,6 @@ function newMask = FilterOpticalDisk(image, segImg, RetCam)
     
         DoGInput = normalized_image;
     else
-        [BW,~] = createYellowMask(image);
-        mask = mask & BW;
-
         redChannel = im2double(image(:,:,1));
 
         DoGInput = redChannel;
@@ -43,75 +40,60 @@ function newMask = FilterOpticalDisk(image, segImg, RetCam)
     filtImg = imadjust(filtImg);
    
   
-    [c,radii,metric] = imfindcircles(filtImg,[10 40], 'EdgeThreshold',0.25);
+    [c,~,metric] = imfindcircles(filtImg,[10 40], 'EdgeThreshold',0.25);
 
     [xLength, yLength] = size(filtImg);
-    metric_th = 0.3;
+    
+    metric_th = 0.25;
     squareSide = 50;
-    windowMask = segImg;
-    radii_th = 25;
-    axisRatio_th = 3.5;
     min_area = 50;
+
     idx = -1;
-    center = -1;
-    center_raddi_th = 10;
-    max_metric = 0;
+    foundObject = 0;
 
-    if ~isempty(c)
-        if RetCam
-            area_th = 650;
-            if metric(1) > metric_th
-                center = 1;
-            end
-        else 
-            area_th = 350;
-            for k=1:length(metric)
-                if metric(k) > metric_th && metric(k) > 0.92 * max_metric && radii(k) > center_raddi_th
-                    max_metric = max([max_metric metric(k)]);
-                    center = k;
-                    center_raddi_th = radii(k);
+    if ~isempty(c)      
+        for k=1:length(metric)
+            if metric(k) > metric_th && ~foundObject
+                windowMask = segImg;
+                %figure; imshow(filtImg); hold on; plot(c(:,1), c(:,2), 'b*'); hold off
+                %figure; imshow(segImg); hold on; plot(c(center,1), c(center,2), 'r*'); hold off
+                
+                ck = c(k,:);
+                if ck(2) > squareSide
+                    windowMask(1:(ck(2)-squareSide),:) = 0;
                 end
-            end
-        end
-        
-
-        if center > -1
-            %figure; imshow(filtImg); hold on; plot(c(:,1), c(:,2), 'b*'); hold off
-            %figure; imshow(segImg); hold on; plot(c(center,1), c(center,2), 'r*'); hold off
-            
-            c = c(center,:);
-            if c(2) > squareSide
-                windowMask(1:(c(2)-squareSide),:) = 0;
-            end
-            if c(2) < xLength - squareSide
-                windowMask((c(2)+squareSide):end,:) = 0;
-            end
-            
-            if c(1) > squareSide
-                windowMask(:,1:(c(1)-squareSide)) = 0;
-            end
-            if c(1) < yLength - squareSide
-                windowMask(:,(c(1)+squareSide):end) = 0;
-            end
-            
-            L = bwlabel(windowMask);
-            stats = regionprops(L,"Centroid", "MajorAxisLength", "MinorAxisLength", "Area");
-            centroids = cat(1, stats.Centroid);
-            majorAxis = cat(1, stats.MajorAxisLength);
-            minorAxis = cat(1, stats.MinorAxisLength);
-            areaStat = cat(1, stats.Area);
-            
-            for i=1:size(centroids,1)
-                distx = centroids(i,1) - c(1);
-                disty = centroids(i,2) - c(2);
-                dist = sqrt(distx^2 + disty^2);
-                axisRatio = majorAxis(i)/minorAxis(i);
-                areaObj = areaStat(i);
-        
-                if dist < radii_th && axisRatio < axisRatio_th && areaObj < area_th && areaObj > min_area
-                    radii_th = dist;
-                    idx = i;
+                if ck(2) < xLength - squareSide
+                    windowMask((ck(2)+squareSide):end,:) = 0;
                 end
+                
+                if ck(1) > squareSide
+                    windowMask(:,1:(ck(1)-squareSide)) = 0;
+                end
+                if ck(1) < yLength - squareSide
+                    windowMask(:,(ck(1)+squareSide):end) = 0;
+                end
+                
+                L = bwlabel(windowMask);
+                stats = regionprops(L,"Centroid", "MajorAxisLength", "MinorAxisLength", "Area");
+                centroids = cat(1, stats.Centroid);
+                majorAxis = cat(1, stats.MajorAxisLength);
+                minorAxis = cat(1, stats.MinorAxisLength);
+                areaStat = cat(1, stats.Area);
+                
+                for i=1:size(centroids,1)
+                    distx = centroids(i,1) - ck(1);
+                    disty = centroids(i,2) - ck(2);
+                    dist = sqrt(distx^2 + disty^2);
+                    axisRatio = majorAxis(i)/minorAxis(i);
+                    areaObj = areaStat(i);
+            
+                    if dist < dist_th && axisRatio < axisRatio_th && areaObj < area_th && areaObj > min_area
+                        dist_th = dist;
+                        idx = i;
+                        foundObject = 1;
+                    end
+                end
+                clear stats;
             end
         end
     end

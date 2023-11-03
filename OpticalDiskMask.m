@@ -1,4 +1,4 @@
-function [mask, center, radii] = OpticalDiskMask(i, BW, metric_th)
+function [mask, center, radii] = OpticalDiskMask(i, RetCam, metric_th)
 
     %parametry pro BF
     sigmas = 5;        %  spatial gaussian kernel 
@@ -35,37 +35,34 @@ function [mask, center, radii] = OpticalDiskMask(i, BW, metric_th)
     mask(1:10, :) = 0;
     mask(end-10:end, :) = 0;
     scrtele = strel('disk', 50);
-    mask = imerode(mask, scrtele) & BW;
+    mask = imerode(mask, scrtele);
 
-    figure;
-    subplot(1,2,1); imshow(mask);
-    subplot(1,2,2); imshow(BW)
+    if ~RetCam
+        greenChannel = im2double(i(:,:,2));
 
-    redChannel = im2double(i(:,:,1));
-    kernel_size = 30;
-    mean_kernel = ones(kernel_size) / (kernel_size^2);
-    background_estimate = conv2(redChannel, mean_kernel, 'same');
-    normalized_image = redChannel - background_estimate;
-    normalized_image(~mask) = mean(mean(normalized_image));
+        kernel_size = 30;
+        mean_kernel = ones(kernel_size) / (kernel_size^2);
+        background_estimate = conv2(greenChannel, mean_kernel, 'same');
+        normalized_image = greenChannel - background_estimate;
+        normalized_image(~mask) = mean(mean(normalized_image));
     
-    figure;
-    imshow(normalized_image, [])
+        DoGInput = normalized_image;
+    else
+        [BW,~] = createYellowMask(i);
+        mask = mask & BW;
+
+        redChannel = im2double(i(:,:,1));
+
+        DoGInput = redChannel;
+    end
 
     gSize = 70;
     gaussian1 = fspecial('Gaussian', gSize, 15);
     gaussian2 = fspecial('Gaussian', gSize, 17);
     dog = gaussian1 - gaussian2;
-    filtImg = conv2(normalized_image, dog, 'same');
+    filtImg = conv2(DoGInput, dog, 'same');
     filtImg(~mask) = mean(mean(filtImg(mask)));
     filtImg = imadjust(filtImg);
-    
-    figure; imshow(filtImg)
-
-%     th = multithresh(filtImg, 3);
-%     th2 = multithresh(filtImg, 4);
-%     filtImg1 = imbinarize(filtImg, th(1));
-%     filtImg2 = imbinarize(filtImg, th2(end));
-%     filtImg = filtImg1 & filtImg2;
 
     [centers,radiis,metric] = imfindcircles(filtImg,[10 40], 'EdgeThreshold',0.25);
     mask = zeros(size(redChannel));
