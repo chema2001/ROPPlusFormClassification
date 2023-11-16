@@ -9,7 +9,6 @@ Jaccard = [];
 Specitivity = [];
 
 addpath('frangi_filter_version2a\');
-addpath('jerman_filter\')
 
 stage = "training";
 
@@ -47,8 +46,8 @@ for i = imgInitial:imgFinal
     LAB(:,:,1) = L*100;
     adaptImgRGB = lab2rgb(LAB);
     
-    % Red Channel Extraction from the Enhanced Image
-    adaptImg = adaptImgRGB(:,:,1);
+    % Green Channel Extraction from the Enhanced Image
+    adaptImg = adaptImgRGB(:,:,2);
     
     % Background Normalization
     kernel_size = 30;
@@ -77,7 +76,7 @@ for i = imgInitial:imgFinal
     gaussian_image = conv2(normalized_image, kernel, 'same'); 
     
     % Modified TopHat Operation
-    Sc = strel('rectangle',[1,1]);
+    Sc = strel('rectangle', [1,1]);
     closeImg = imclose(gaussian_image, Sc);
     
     fusedImg = zeros(size(closeImg));
@@ -91,27 +90,18 @@ for i = imgInitial:imgFinal
     
     % Apply Frangi and Jerman Filters
     frangiImg = FrangiFilter2D(imcomplement(fusedImg));
-    jermanImg = vesselness2D(imcomplement(fusedImg), 1:2:7, [10;10], 0.90);
-    
-    % Frangi Result Segmentation using Adapted Otsu Method
-    tfrangi = adaptthresh(frangiImg, 0.08);
-    binnaryImg1 = imbinarize(frangiImg, tfrangi);
-    binnaryImg1 = bwareaopen(binnaryImg1, 250) & mask;
-    
-    % Jerman Result Segmentation using Triangle Threshold
-    imageArray = reshape(jermanImg, 1, []);
-    tjerman = triangleThreshold(imageArray,4);
-    binnaryImg2 = imbinarize(jermanImg,tjerman);
-    binnaryImg2 = bwareaopen(binnaryImg2, 250);
-    
-    % Final segmentation by combining the two above segmentations
-    segImg = binnaryImg1;
+ 
+    % Frangi Result Segmentation using Triangle Threshold
+    imageArray = reshape(frangiImg, 1, []);
+    tfrangi = triangleThreshold(imageArray,128);
+    segImg = imbinarize(frangiImg, tfrangi);
+    segImg = bwareaopen(segImg, 100) & mask;
 
-%     seg_name =  "DRIVE_Dataset\DRIVE_Segmentation_Results\JPG\Seg_" + img_name + '.jpg';
-%     imwrite(segImg, seg_name);
-%     
-%     matSeg_name = "DRIVE_Dataset\DRIVE_Segmentation_Results\MAT\Seg_" + img_name + '.mat';
-%     save(matSeg_name, "segImg");
+    seg_name =  "DRIVE_Dataset\DRIVE_Segmentation_Results\JPG\Seg_" + img_name + '.jpg';
+    imwrite(segImg, seg_name);
+    
+    matSeg_name = "DRIVE_Dataset\DRIVE_Segmentation_Results\MAT\Seg_" + img_name + '.mat';
+    save(matSeg_name, "segImg");
 
     if stage == "training"
         [acc, sen, f, pre, mcc, dice, jac, spe] = EvaluateImageSegmentationScores(segImg, GT);
@@ -130,5 +120,11 @@ end
 
 if stage == "training"
     table = [21:40; Accuracy; Sensitivity; Fmeasure; Precision; MCC; Dice; Jaccard; Specitivity]';
-    writematrix(table, 'scores_drive_nnn.csv')
+    writematrix(table, 'DRIVE_Dataset\DRIVE_Segmentation_Results\scores_drive.csv')
+end
+
+if stage == "training"
+    acc = mean(Accuracy)
+    sen = mean(Sensitivity)
+    spe = mean(Specitivity)
 end

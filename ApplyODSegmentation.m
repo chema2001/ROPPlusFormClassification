@@ -19,7 +19,7 @@ addpath('ODExternalFunctions\')
 
 % Folder Selection
 img_folder = "Retinal_Images\Images\";
-seg_folder = "Retinal_Images\Segmentation_Results\JPG\";
+seg_folder = "Retinal_Images\Segmentation_Combined\";
 files = dir(img_folder);
 image_files = files(contains({files.name}, {'.jpg', '.png', '.bmp', '.tif'}));
 
@@ -33,7 +33,8 @@ for i=1:length(image_files)
     dist_th = 25;
     axisRatio_th = 3.5;
     area_th = 650;
-    newMask = FilterOpticalDisk(image, segImg, RetCam, dist_th, axisRatio_th, area_th);
+    RetCam = 1;
+    ODMask = FilterOpticalDisk(image, segImg, RetCam, dist_th, axisRatio_th, area_th);
 
     maskRGB = cat(3, 255 * segImg, 255*(segImg & ODMask), 255*(segImg & ODMask));
     ODMaskName = "Retinal_Images\ODMasks_new\Visual\OD_" + image_files(i).name;

@@ -19,16 +19,19 @@ img_name = "Control028_Serie2_4.jpg";
 img_path = "Retinal_Images\Images\" + img_name;
 image = im2double(imread(img_path));
 
+segImg = imbinarize(imread("Retinal_Images\Segmentation_Combined\Seg_Control028_Serie2_4.jpg"));
+
+
 RetCam = 1; % RetCam and ICON images have some differences
 metric_th = 0.3;
 [mask, center, radii] = OpticalDiskMask(image,RetCam, metric_th);
 
-repRGB = cat(3, 255*(segImg | odMask), 255*segImg, 255*segImg);
+repRGB = cat(3, 255*segImg, 255*(segImg & ~mask), 255*(segImg & ~mask));
 figure; imshow(repRGB); 
-hold on; plot(center(1), center(2), 'b*'); hold off
+%hold on; plot(center(1), center(2), 'b*'); hold off
 
 imgId = split(img_name, '.');
 imgId = imgId(1);
 
 matFileName = "ODMask_" + imgId + ".mat";
-save(matFileName, "mask", "center");
+% save(matFileName, "mask", "center");

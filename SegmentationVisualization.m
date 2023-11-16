@@ -13,16 +13,20 @@ addpath('frangi_filter_version2a\');
 addpath('jerman_filter\')
 
 % Image Selection
-img_folder = "ICON_Phoenix\P2\";
-img_name = "210410_L_04-12-2021_06-23-31_11.jpg";
+img_folder = "DRIVE_Dataset\training\images\";
+img_name = "21_training.tif";
 img_path = img_folder + img_name;
 image = im2double(imread(img_path));
-image = imresize(image,[680 680]); % ONLY for Icon Images
+%image = imresize(image,[680 680]); % ONLY for Icon Images
 
 % FOV Mask Generation based on the Green Channel
 greenImg = image(:,:,2);
-mask = imbinarize(greenImg,0.01);
-mask = imfill(mask, [100,100]);
+% mask = imbinarize(greenImg,0.01);
+% mask = imfill(mask, [100,100]);
+% scrtele = strel('disk', 10);
+% mask = imerode(mask, scrtele);
+
+mask = imbinarize(imread("DRIVE_Dataset\training\mask\21_training_mask.gif"));
 scrtele = strel('disk', 10);
 mask = imerode(mask, scrtele);
 
@@ -78,26 +82,29 @@ end
 fusedImg = fusedImg ./ 3;
 
 % Visualize the Enhancement results
-figure
-subplot(2,2,1)
-imshow(adaptImg,[])
-title('CLAHE')
-subplot(2,2,2)
-imshow(normalized_image, [])
-title('BG Normalization')
-subplot(2,2,3)
-imshow(gaussian_image,[])
-title('Gaussian Kernel')
-subplot(2,2,4)
-imshow(fusedImg,[])
-title('TopHat Image')
+% figure
+% subplot(2,2,1)
+% imshow(adaptImg,[])
+% title('CLAHE')
+% subplot(2,2,2)
+% imshow(normalized_image, [])
+% title('BG Normalization')
+% subplot(2,2,3)
+% imshow(gaussian_image,[])
+% title('Gaussian Kernel')
+% subplot(2,2,4)
+% imshow(fusedImg,[])
+% title('TopHat Image')
 
 % Apply Frangi and Jerman Filters
 frangiImg = FrangiFilter2D(imcomplement(fusedImg));
 jermanImg = vesselness2D(imcomplement(fusedImg), 1:2:7, [10;10] , 0.90);
 
 % Frangi Result Segmentation using Adapted Otsu Method
-tfrangi = adaptthresh(frangiImg, 0.08);
+imageArray = reshape(frangiImg, 1, []);
+tfrangi = triangleThreshold(imageArray,100);
+%     binnaryImg2 = imbinarize(jermanImg,tjerman);
+%     tfrangi = adaptthresh(frangiImg, 0.08);
 binnaryImg1 = imbinarize(frangiImg, tfrangi);
 binnaryImg1 = bwareaopen(binnaryImg1, 250) & mask;
 
@@ -113,38 +120,39 @@ frangiImgC = frangiImg ./ max(max(frangiImg));
 combinedImg = 0.3*jermanImgC + 0.7*frangiImgC;
 
 % Final segmentation by combining the two above segmentations
-segImg = binnaryImg1 & binnaryImg2;
+segImg = binnaryImg1;
 
-% Results Visualization
-figure
-subplot(2,3,1)
-imshow(frangiImg,[])
-title('Frangi Filter')
-subplot(2,3,2)
-imshow(jermanImg, [])
-title('Jerman Filter')
-subplot(2,3,3)
-imshow(combinedImg, [])
-title('Combined Img')
-subplot(2,3,4)
-imshow(binnaryImg1)
-title('Segmentation of Frangi Filter')
-subplot(2,3,5)
-imshow(binnaryImg2)
-title('Segmentation of Jerman Filter')
-subplot(2,3,6)
-imshow(segImg)
-title('Combined Segmentation')
-
-seg_img = greenImg + 255*segImg;
-
-figure
-subplot(1,2,1)
-imshow(image)
-title('Original Image')
-subplot(1,2,2)
-imshow(seg_img)
-title('Segmentation Result')
+%Results Visualization
+% figure
+% subplot(2,3,1)
+% imshow(frangiImg,[])
+% title('Frangi Filter')
+% subplot(2,3,2)
+% imshow(jermanImg, [])
+% title('Jerman Filter')
+% subplot(2,3,3)
+% imshow(combinedImg, [])
+% title('Combined Img')
+% subplot(2,3,4)
+% imshow(binnaryImg1)
+% title('Segmentation of Frangi Filter')
+% subplot(2,3,5)
+% imshow(binnaryImg2)
+% title('Segmentation of Jerman Filter')
+% subplot(2,3,6)
+% imshow(segImg)
+% title('Combined Segmentation')
+% 
+% seg_img = greenImg + 255*segImg;
+% 
+% figure
+% subplot(1,2,1)
+% imshow(image)
+% title('Original Image')
+% subplot(1,2,2)
+% imshow(seg_img)
+% title('Segmentation Result')
 
 % segImg = imresize(segImg, [1240 1240]);
-% figure; imshow(segImg)
+figure; imshow(segImg)
+

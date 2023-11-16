@@ -55,6 +55,8 @@ function newMask = FilterOpticalDisk(image, segImg, RetCam, dist_th, axisRatio_t
         for k=1:length(metric)
             if metric(k) > metric_th && ~foundObject
                 windowMask = segImg;
+                se = strel('rectangle', [2 2]);
+                windowMask = imdilate(windowMask, se);
                 %figure; imshow(filtImg); hold on; plot(c(:,1), c(:,2), 'b*'); hold off
                 %figure; imshow(segImg); hold on; plot(c(center,1), c(center,2), 'r*'); hold off
                 

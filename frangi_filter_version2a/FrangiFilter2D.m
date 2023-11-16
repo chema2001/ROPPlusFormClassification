@@ -33,7 +33,7 @@ function [outIm,whatScale,Direction] = FrangiFilter2D(I, options)
 % Re-Written by D.Kroon University of Twente (May 2009)
 
 
-defaultoptions = struct('FrangiScaleRange', [1 8], 'FrangiScaleRatio', 2, 'FrangiBetaOne', 0.5, 'FrangiBetaTwo', 13, 'verbose',true,'BlackWhite',true);
+defaultoptions = struct('FrangiScaleRange', [1 8], 'FrangiScaleRatio', 2, 'FrangiBetaOne', 0.5, 'FrangiBetaTwo', 15, 'verbose',true,'BlackWhite',true);
 
 
 % Process inputs
