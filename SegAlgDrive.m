@@ -7,6 +7,7 @@ MCC = [];
 Dice = [];
 Jaccard = [];
 Specitivity = [];
+time= [];
 
 addpath('frangi_filter_version2a\');
 
@@ -27,6 +28,8 @@ for i = imgInitial:imgFinal
     img_name = i + "_" + stage;
     img_name_path = "DRIVE_Dataset\"+ stage +"\images\"+ i +"_" + stage + ".tif";
     mask_name = "DRIVE_Dataset\" + stage + "\mask\"+ i +"_" + stage + "_mask.gif";
+
+    tic
     image=im2double(imread(img_name_path));
     mask = imread(mask_name);
     mask = imbinarize(mask);
@@ -76,7 +79,7 @@ for i = imgInitial:imgFinal
     gaussian_image = conv2(normalized_image, kernel, 'same'); 
     
     % Modified TopHat Operation
-    Sc = strel('rectangle', [1,1]);
+    Sc = strel('rectangle', [2,2]);
     closeImg = imclose(gaussian_image, Sc);
     
     fusedImg = zeros(size(closeImg));
@@ -90,19 +93,38 @@ for i = imgInitial:imgFinal
     
     % Apply Frangi and Jerman Filters
     frangiImg = FrangiFilter2D(imcomplement(fusedImg));
- 
+
     % Frangi Result Segmentation using Triangle Threshold
-    imageArray = reshape(frangiImg, 1, []);
-    tfrangi = triangleThreshold(imageArray,128);
-    segImg = imbinarize(frangiImg, tfrangi);
-    segImg = bwareaopen(segImg, 100) & mask;
+    %imageArray = reshape(frangiImg, 1, []);
+    %tfrangi = triangleThreshold(imageArray,128);
+%     tfrangi = adaptthresh(frangiImg, 0.08);
+%     binnaryImg1 = imbinarize(frangiImg, tfrangi);
+%     binnaryImg1 = bwareaopen(binnaryImg1, 100) & mask;
 
-    seg_name =  "DRIVE_Dataset\DRIVE_Segmentation_Results\JPG\Seg_" + img_name + '.jpg';
-    imwrite(segImg, seg_name);
+
+    jermanImg = vesselness2D(imcomplement(fusedImg), 1:2:7, [4;4], 0.90);
+%     imageArray = reshape(jermanImg, 1, []);
+%     tjerman = triangleThreshold(imageArray,8);
+%     binnaryImg2 = imbinarize(jermanImg,tjerman);
+%     binnaryImg2 = bwareaopen(binnaryImg2, 100);
     
-    matSeg_name = "DRIVE_Dataset\DRIVE_Segmentation_Results\MAT\Seg_" + img_name + '.mat';
-    save(matSeg_name, "segImg");
+    frangiImg = imadjust(frangiImg);
+    jermanImg = imadjust(jermanImg);
+    combinedImg = 0.6*frangiImg + 0.4*jermanImg;
+    imageArray = reshape(combinedImg, 1, []);
+    tcombined = triangleThreshold(imageArray, 8);
+    binnaryImg3 = imbinarize(combinedImg, tcombined);
+    binnaryImg3 = bwareaopen(binnaryImg3, 100) & mask;
 
+    segImg = binnaryImg3;
+   
+%     seg_name =  "DRIVE_Dataset\Segmentation_Results\JPG\Seg_" + img_name + '.jpg';
+%     imwrite(segImg, seg_name);
+%     
+%     matSeg_name = "DRIVE_Dataset\Segmentation_Results\MAT\Seg_" + img_name + '.mat';
+%     save(matSeg_name, "segImg");
+    
+    time(end+1) = toc;
     if stage == "training"
         [acc, sen, f, pre, mcc, dice, jac, spe] = EvaluateImageSegmentationScores(segImg, GT);
         Accuracy(end+1) = acc;
@@ -118,13 +140,15 @@ for i = imgInitial:imgFinal
 end
 
 
-if stage == "training"
-    table = [21:40; Accuracy; Sensitivity; Fmeasure; Precision; MCC; Dice; Jaccard; Specitivity]';
-    writematrix(table, 'DRIVE_Dataset\DRIVE_Segmentation_Results\scores_drive.csv')
-end
+% if stage == "training"
+%     table = [21:40; Accuracy; Sensitivity; Fmeasure; Precision; MCC; Dice; Jaccard; Specitivity]';
+%     writematrix(table, 'DRIVE_Dataset\Segmentation_Results\scores_jerman.csv')
+% end
 
 if stage == "training"
     acc = mean(Accuracy)
     sen = mean(Sensitivity)
     spe = mean(Specitivity)
 end
+
+tm = mean(time)

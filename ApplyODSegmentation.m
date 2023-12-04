@@ -18,8 +18,8 @@ addpath('jerman_filter\')
 addpath('ODExternalFunctions\')
 
 % Folder Selection
-img_folder = "Retinal_Images\Images\";
-seg_folder = "Retinal_Images\Segmentation_Combined\";
+img_folder = "ICON_Phoenix\P1\";
+seg_folder = "ICON_Phoenix\P1\Segmentation_Results\JPG\";
 files = dir(img_folder);
 image_files = files(contains({files.name}, {'.jpg', '.png', '.bmp', '.tif'}));
 
@@ -31,19 +31,20 @@ for i=1:length(image_files)
     segImg = imbinarize(segImg);
     
     dist_th = 25;
-    axisRatio_th = 3.5;
-    area_th = 650;
-    RetCam = 1;
-    ODMask = FilterOpticalDisk(image, segImg, RetCam, dist_th, axisRatio_th, area_th);
+    axisRatio_th = 3;
+    area_th = 1500;
+    RetCam = 0;
+    windowSize = 40;
+    ODMask = FilterOpticalDisk(image, segImg, RetCam, dist_th, axisRatio_th, area_th, windowSize);
 
     maskRGB = cat(3, 255 * segImg, 255*(segImg & ODMask), 255*(segImg & ODMask));
-    ODMaskName = "Retinal_Images\ODMasks_new\Visual\OD_" + image_files(i).name;
+    ODMaskName = "ICON_Phoenix\P1\ODFiltered1\Visual\OD_" + image_files(i).name;
     imwrite(maskRGB, ODMaskName);
 
-    ODFilteredImageName = "Retinal_Images\ODMasks_new\JPG\OD_" + image_files(i).name; 
+    ODFilteredImageName = "ICON_Phoenix\P1\ODFiltered1\JPG\OD_" + image_files(i).name; 
     imwrite(ODMask, ODFilteredImageName);
 
     image_id = split(image_files(i).name, '.');
-    matOD_name = "Retinal_Images\ODMasks_new\MAT\OD_" + image_id(1) + ".mat";
+    matOD_name = "ICON_Phoenix\P1\ODFiltered1\MAT\OD_" + image_id(1) + ".mat";
     save(matOD_name, "ODMask");
 end

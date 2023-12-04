@@ -13,13 +13,13 @@ addpath('frangi_filter_version2a\');
 addpath('jerman_filter\')
 
 % Folder Selection
-img_folder = "Retinal_Images\Images\";
+img_folder = "ICON_Phoenix\P4\";
 files = dir(img_folder);
 image_files = files(contains({files.name}, {'.jpg', '.png', '.bmp', '.tif'}));
 
 for i=1:length(image_files)
     image = im2double(imread(img_folder + image_files(i).name));
-    %image = imresize(image,[680 680]); % ONLY for ICON Images
+    image = imresize(image,[680 680]); % ONLY for ICON Images
 
     % FOV Mask Generation based on the Green Channel
     greenImg = image(:,:,2);
@@ -27,6 +27,8 @@ for i=1:length(image_files)
     mask = imfill(mask, [100,100]);
     scrtele = strel('disk', 10);
     mask = imerode(mask, scrtele);
+    mask(1:5, :) = 0;
+    mask(end-5:end, :) = 0;
     
     % LAB Image Enhancement
     LAB = rgb2lab(image);
@@ -36,7 +38,7 @@ for i=1:length(image_files)
     adaptImgRGB = lab2rgb(LAB);
 
     % Red Channel Extraction from the Enhanced Image
-    adaptImg = adaptImgRGB(:,:,1);
+    adaptImg = adaptImgRGB(:,:,2);
     %adaptImg = image(:,:,2);
 
     % Background Normalization
@@ -66,7 +68,7 @@ for i=1:length(image_files)
     gaussian_image = conv2(normalized_image, kernel, 'same');
 
     % Modified TopHat Operation
-    Sc = strel('rectangle',[1,1]);
+    Sc = strel('rectangle',[2,2]);
     closeImg = imclose(gaussian_image, Sc);
     
     fusedImg = zeros(size(closeImg));
@@ -83,7 +85,8 @@ for i=1:length(image_files)
     jermanImg = vesselness2D(imcomplement(fusedImg), 1:2:7, [10;10], 0.90);
 
     % Frangi Result Segmentation using Adapted Otsu Method
-    tfrangi = adaptthresh(frangiImg, 0.08);
+    imageArray = reshape(frangiImg, 1, []);
+    tfrangi = triangleThreshold(imageArray,32);
     binnaryImg1 = imbinarize(frangiImg, tfrangi);
     binnaryImg1 = bwareaopen(binnaryImg1, 250) & mask;
    
@@ -91,17 +94,26 @@ for i=1:length(image_files)
     imageArray = reshape(jermanImg, 1, []);
     tjerman = triangleThreshold(imageArray,4);
     binnaryImg2 = imbinarize(jermanImg,tjerman);
-    binnaryImg2 = bwareaopen(binnaryImg2, 250);
+    binnaryImg2 = bwareaopen(binnaryImg2, 300);
+
+    % Combined Enhancement
+    frangiImg = imadjust(frangiImg);
+    jermanImg = imadjust(jermanImg);
+    combinedImg = 0.7*frangiImg + 0.3*jermanImg;
+    imageArray = reshape(combinedImg, 1, []);
+    tcombined = triangleThreshold(imageArray, 4);
+    binnaryImg3 = imbinarize(combinedImg, tcombined);
+    binnaryImg3 = bwareaopen(binnaryImg3, 250) & mask;
 
     % Final segmentation by combining the two above segmentations
-    segImg = binnaryImg1 & binnaryImg2;
-    %segImg = imresize(segImg, [1240 1240]); % ONLY for Icon Images
+    segImg = binnaryImg3;
+    segImg = imresize(segImg, [1240 1240]); % ONLY for Icon Images
 
     % Save the result of the Segmentation
-    seg_name =  "Retinal_Images\Segmentation_new\JPG\Seg_" + image_files(i).name;
+    seg_name =  "ICON_Phoenix\P4\Segmentation_Results\JPG\Seg_" + image_files(i).name;
     imwrite(segImg, seg_name);
 
     image_name = split(image_files(i).name, '.');
-    matSeg_name = "Retinal_Images\Segmentation_new\MAT\Seg_" + image_name(1) + ".mat";
+    matSeg_name = "ICON_Phoenix\P4\Segmentation_Results\MAT\Seg_" + image_name(1) + ".mat";
     save(matSeg_name, "segImg");
 end

@@ -167,8 +167,13 @@ test_transforms = torchvision.transforms.Compose([
 training_data=ROPDataSet(file='RetinalData.csv', img_dir=r'C:\Users\zepin\Desktop\ROPPlusFormClassification\Retinal_Images\Skeletonization_Results\JPG', train=True, transform=train_transforms)
 test_data=ROPDataSet(file='RetinalData.csv', img_dir=r'C:\Users\zepin\Desktop\ROPPlusFormClassification\Retinal_Images\Skeletonization_Results\JPG', train=False, transform=test_transforms)
 
-train_dataloader = DataLoader(training_data, batch_size=12, shuffle=True)
-test_dataloader = DataLoader(test_data, batch_size=12, shuffle=False)
+batchSize = 12
+class_sample_count = [205, 1084]
+weights = 1 /torch.Tensor(class_sample_count)
+sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, batchSize)
+
+train_dataloader = DataLoader(training_data, batch_size=batchSize, shuffle=True)
+test_dataloader = DataLoader(test_data, batch_size=batchSize, shuffle=False)
 
 input_size = [224, 244, 1]
 hidden_sizes = [128, 64]
